@@ -1,0 +1,134 @@
+---
+title: "NBA Stats"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+
+```{r}
+library(ggplot2)
+# Using Stats from NBA reference
+nba <- read.csv(file.choose(), stringsAsFactors = T)
+nba = nba[,-31]
+head(nba)
+# Stats of nba players in 2022-2023 season
+```
+
+```{r}
+names(nba)
+# Rk = rank via alphabetical order, Player = First and last name of player, Pos = the position that player plays, Age = age of player, Tm = City abbreviation that the player plays for, G = Total Games played, GS = Games started, MP = Minutes per game, FG = Average Field goals made per game, FGA = Average field goals attempted per game, FG. = Field goal percentage, X3P = Average 3 pointers made per game, X3PA = Average 3 pointers attempted per game, X3P. = 3 Point field goal percentage, X2P = Average 2 point field goals made per game, X2PA = Average 2 pointers attempted per game, X2P. = 2 point field goal percentage, eFG. = Effective field goal percentage, FT = average free throws made per game, FTA = free throws attempted per game, FT. = free throw percentage, ORB = Offensive rebounds per game, DRB = defensive rebounds per game, TRB = Total rebounds per game, AST = assists per game, STL = Steals per game, BLK = Blocks per game, TOV = Turnovers per game, PF = Personal fouls per game, PTS = Points per game. 
+```
+
+
+
+```{r}
+nba.lm <- lm(PTS ~ MP + FGA + X2PA + X3PA + FTA, nba)
+nba.lm
+summary(nba.lm)
+# Using Minutes played, field goal attempts, 2 point field goal attempts, 3 point field
+# goal attempts, and free throw attempts as predictor variables for the outcome points variable.
+# Minutes played and free throw attempts are more significant than other 3 variables. 
+# High R squared at 0.98 which shows that these stats are a good fit for predicting the outcome of points per game. 
+```
+
+```{r}
+nba.lm2 <- lm(PTS ~ MP + FTA, nba)
+summary(nba.lm2)
+# Doing another model with just Minutes played and Free throw attempts. Both have equal significance. 
+# R squared goes down significantly compared to model with more fields. 
+```
+
+
+
+```{r}
+plot(nba.lm)
+```
+
+
+
+```{r}
+nbaAdv <- read.csv(file.choose(), stringsAsFactors = T)
+head(nbaAdv)
+# Advanced stats of NBA players from 2022-2023 season.
+```
+
+```{r}
+names(nbaAdv)
+# Rk, Player, Pos, Age, Tm, and G are all the same as the regular stats used. 
+# MP (MPT) = Total minutes played, PER = Player Efficiency Rating, TS. = True Shooting Percentage, X3PAr = 3 point attempt rate, FTr = Free throw attempt rate, ORB. = offensive rebound percentage, DRB. = Defensive rebound percentage, TRB. = Total Rebound Percentage, AST. = Assist Percentage, STL. = Steal percentage, BLK. = Block Percentage, TOV. = Turnover Percentage, USG. = Usage Percentage, OWS = Offensive Win Shares, DWS = Defensive Win Shares, WS = Win Shares, WS.48 = Win Shares per 48 minutes, OBPM = Offensive box plus minus, DBPM = Defensive box plus minus, BPM = Box score plus minus, VORP = Value over replacement player. 
+```
+
+
+```{r}
+nbaAdv2 = nbaAdv[,-c(1,2,3,4,5)]
+# Removing fields in Advanced stats that are the same as regular stats. (Rank, Name, Position, Team, Games)
+head(nbaAdv2)
+newNba = cbind(nba, nbaAdv2)
+head(newNba)
+# Combining players regular and advanced stats.
+```
+
+
+```{r}
+colnames(newNba)[31] = "MPT"
+# Changing the MP in the advanced stats to MPT so that there is no duplicates. 
+head(newNba)
+nba2.lm <- lm(PTS ~ MP + FGA + X2PA + X3PA + FTA + PER + TS. + USG. + FTr + X3PAr + MPT + OWS + OBPM + VORP, newNba)
+summary(nba2.lm)
+# Using other advanced statistics for a linear regression on Points. 
+# Free throw attempts, True shooting percentage, Free throw rate, Minutes played total, and Offensive win shares are the most significant.
+# R squared value of 0.99, most likely because there are so many variables being used to predict the outcome of Points per game. 
+# Two least significant stats are VORP and Offensive box plus minus. Remove those 2 in next model.
+```
+
+```{r}
+nba3.lm <- lm(PTS ~ MP + FGA + X2PA + X3PA + FTA + PER + TS. + USG. + FTr + X3PAr + MPT + OWS, newNba)
+summary(nba3.lm)
+# FTA, TS., FTr, MPT, and OWS are still the most significant. R squared has stayed the same because there were no major changes to the model besides removing the 2 least significant. 
+# PER is the least significant, remove in next model. 
+```
+
+```{r}
+nba4.lm <- lm(PTS ~ MP + FGA + X2PA + X3PA + FTA + TS. + USG. + FTr + X3PAr + MPT + OWS, newNba)
+summary(nba4.lm)
+# FTA, TS., MPT, and OWS are still the most significant. FTr is still significant, but not as much as before. 
+# MP and X3PAr are the least significant, remove in next model. 
+```
+
+```{r}
+nba5.lm <- lm(PTS ~ FGA + X2PA + X3PA + FTA + TS. + USG. + FTr + MPT + OWS, newNba)
+summary(nba5.lm)
+# Variables from past models are still significant, but now USG. (Usage percentage) is also significant in this model. Removing FGA in next model. 
+```
+
+```{r}
+nba6.lm <- lm(PTS ~  X2PA + X3PA + FTA + TS. + USG. + FTr + MPT + OWS, newNba)
+summary(nba6.lm)
+# All variables are now significant in this model. 
+```
+
+```{r}
+sigma(nba6.lm)
+```
+
+
+```{r}
+sigma(nba6.lm)/mean(newNba$PTS)
+# Error rate is about 5.9% which is really good for this model. Can mix and match more stats and models to try and find the best error rate. 
+```
+
+```{r}
+nba7.lm <- lm(PTS ~  X2PA * X3PA * FTA * TS. * USG. * FTr * MPT * OWS, newNba)
+summary(nba7.lm)
+# Using a relation between all of the significant variables to create a huge linear model. 
+# The relation of X2PA and TS. as well as X3PA and TS. are the most significant. 
+```
+
+```{r}
+nba8.lm <- lm(PTS ~  X2PA * X3PA * TS., newNba)
+summary(nba8.lm)
+```
+
